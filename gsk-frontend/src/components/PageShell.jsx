@@ -3,9 +3,9 @@ import Header from "./Header.jsx";
 
 export default function PageShell({ children }) {
   return (
-    <div className="container">
+    <div>
       <Header />
-      {children}
+      <div className="container">{children}</div>
     </div>
   );
 }

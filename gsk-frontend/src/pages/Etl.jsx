@@ -2,10 +2,13 @@ import React, { useState } from "react";
 import * as XLSX from "xlsx";
 import FileUpload from "../components/FileUpload.jsx";
 import DataPreview from "../components/DataPreview.jsx";
+import { api } from "../api/client.js";
 
 export default function Etl() {
   const [previewData, setPreviewData] = useState([]);
   const [uploaded, setUploaded] = useState(false);
+  const [transformResult, setTransformResult] = useState(null);
+  const [transformError, setTransformError] = useState(null);
 
   const handleFileUpload = async (file) => {
     if (!file) return;
@@ -17,9 +20,19 @@ export default function Etl() {
     const jsonData = XLSX.utils.sheet_to_json(sheet);
     setPreviewData(jsonData.slice(0, 5));
     setUploaded(true);
-    console.log("API BASE URL:", import.meta.env.VITE_API_BASE_URL);
+    setTransformError(null);
+    setTransformResult(null);
 
-
+    try {
+      const columns = jsonData.length > 0 ? Object.keys(jsonData[0]) : [];
+      const response = await api.post("/transform/tall-to-wide", {
+        columns,
+        rows: jsonData,
+      });
+      setTransformResult(response.data);
+    } catch (err) {
+      setTransformError("Backend transform failed. Check server logs and CORS.");
+    }
   };
 
   return (
@@ -48,6 +61,30 @@ export default function Etl() {
           }}
         >
           ✔ Your data is uploaded successfully
+        </div>
+      )}
+
+      {transformResult && (
+        <div className="card" style={{ marginTop: "16px" }}>
+          <h3 style={{ marginTop: 0 }}>Backend Response</h3>
+          <div><strong>Message:</strong> {transformResult.message}</div>
+          <div><strong>Input rows:</strong> {transformResult.input_row_count}</div>
+        </div>
+      )}
+
+      {transformError && (
+        <div
+          style={{
+            marginTop: "16px",
+            padding: "12px",
+            borderRadius: "10px",
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            color: "#991b1b",
+            fontWeight: 600,
+          }}
+        >
+          {transformError}
         </div>
       )}
 
